@@ -90,6 +90,7 @@ public class SootParameters extends Parameters {
         System.err.println("  --allow-phantom                       Allow phantom classes.");
         System.err.println("  -d <directory>                        Specify where to generate output fact files.");
         System.err.println("  -i <archive>                          Find classes in <archive>.");
+        System.err.println("  -idir <directory>                     Find classes/jar in <directory>.");
         System.err.println("  -l <archive>                          Find library classes in <archive>.");
         System.err.println("  -ld <archive>                         Find dependency classes in <archive>.");
         System.err.println("  -lsystem                              Find classes in default system classes.");

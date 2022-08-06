@@ -161,6 +161,22 @@ public class Parameters {
             i = shift(args, i);
             _inputs.add(args[i]);
             break;
+        case "-idir":
+            i = shift(args, i);
+            File inputDir = new File(args[i]);
+            File[] files = inputDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.getName().endsWith(".jar")) {
+                        try{
+                            _inputs.add(file.getCanonicalPath());
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+            break;
         case "-l":
             i = shift(args, i);
             _platformLibs.add(args[i]);
