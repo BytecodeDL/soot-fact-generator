@@ -7,11 +7,17 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
 import org.apache.log4j.Logger;
 import org.clyze.doop.util.filter.ClassFilter;
 import org.clyze.doop.util.filter.GlobClassFilter;
 import org.clyze.utils.ContainerUtils;
 import org.clyze.utils.JHelper;
+import org.zeroturnaround.zip.ZipUtil;
+
+import static org.clyze.utils.ContainerUtils.createTmpDir;
 
 /**
  * This class handles common parameters for Doop Java front-ends.
@@ -313,5 +319,68 @@ public class Parameters {
         getDependencies().addAll(jarLibs);
         System.out.println("inputs = " + getInputs());
         System.out.println("libraries = " + getDependencies());
+    }
+
+    public boolean isSpringBootJar(String jarFile){
+        try{
+            ZipInputStream in = new ZipInputStream(new FileInputStream(jarFile));
+
+            ZipEntry entry = null;
+
+            while((entry = in.getNextEntry()) != null){
+                if (entry.isDirectory() && entry.getName().equals("org/springframework/boot/")){
+                    return true;
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public void processSpringBootArchives(Set<String> tmpDirs, String springBootJar){
+        try{
+            String tmpDirPath = createTmpDir(tmpDirs);
+            Set<String> jarLibs = ConcurrentHashMap.newKeySet();
+
+            if (tmpDirPath == null) {
+                System.out.println("ERROR: null temporary directory path");
+                return;
+            }
+            File tmpDir = new File(tmpDirPath);
+            File springBootJarFile = new File(springBootJar);
+            ZipUtil.unpack(springBootJarFile, tmpDir);
+            // zip BOOT-INF/classes
+            String jar = tmpDir + "/" + springBootJarFile.getName();
+            File webInfClasses = new File(tmpDir,"BOOT-INF/classes/");
+            if (webInfClasses.exists()) {
+                File zipTarget = new File(jar);
+                ZipUtil.pack(webInfClasses, zipTarget);
+                jarLibs.add(zipTarget.getCanonicalPath());
+            }
+            // collect libs in BOOT-INF/lib
+            File bootInfLibs = new File(tmpDir, "BOOT-INF/lib");
+            if (bootInfLibs.exists()) {
+                File[] files = bootInfLibs.listFiles();
+                if (files != null) {
+                    for (File file : files) {
+                        if (file.getName().endsWith(".jar")) {
+                            jarLibs.add(file.getCanonicalPath());
+                        }
+                    }
+                }
+            }
+
+            jarLibs.addAll(getInputs());
+            jarLibs.remove(springBootJar);
+            setInputs(new ArrayList<String>(jarLibs));
+//            jarLibs.addAll(getDependencies());
+//            setDependencies(new ArrayList<>(jarLibs));
+            System.out.println("inputs = " + getInputs());
+            System.out.println("libraries = " + getDependencies());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
 }

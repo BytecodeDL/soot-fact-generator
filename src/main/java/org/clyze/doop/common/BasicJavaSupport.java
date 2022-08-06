@@ -72,6 +72,7 @@ public class BasicJavaSupport {
         boolean isZip = filenameL.endsWith(".zip");
         boolean isClass = filenameL.endsWith(".class");
         boolean isApk = filenameL.endsWith(".apk");
+        boolean isSpringBoot = parameters.isSpringBootJar(filenameL);
 
         ArtifactScanner.EntryProcessor gProc = (jarFile, entry, entryName) -> {
             if (entryName.endsWith(".properties"))
@@ -90,6 +91,12 @@ public class BasicJavaSupport {
             // Process WAR inputs.
             parameters.processFatArchives(tmpDirs);
         }
+
+        if (isSpringBoot) {
+            System.out.println("Processing springBoot: " + filename);
+            parameters.processSpringBootArchives(tmpDirs, filename);
+        }
+
         if (isJar || isApk || isZip || isWar)
             artScanner.processArchive(filename, classSet::add, gProc);
         else if (isClass) {
