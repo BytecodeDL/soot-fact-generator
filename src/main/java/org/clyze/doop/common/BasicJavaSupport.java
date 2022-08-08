@@ -72,7 +72,7 @@ public class BasicJavaSupport {
         boolean isZip = filenameL.endsWith(".zip");
         boolean isClass = filenameL.endsWith(".class");
         boolean isApk = filenameL.endsWith(".apk");
-        boolean isSpringBoot = parameters.isSpringBootJar(filenameL);
+        boolean isSpringBoot = parameters.isSpringBootJar(filename);
 
         ArtifactScanner.EntryProcessor gProc = (jarFile, entry, entryName) -> {
             if (entryName.endsWith(".properties"))
