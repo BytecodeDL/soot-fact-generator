@@ -17,8 +17,10 @@ Options:
   --allow-phantom                       Allow phantom classes.
   -d <directory>                        Specify where to generate output fact files.
   -i <archive>                          Find classes in <archive>.
+  -i-dir <directory>                    Find classes/jar in <directory>.
   -l <archive>                          Find library classes in <archive>.
   -ld <archive>                         Find dependency classes in <archive>.
+  -ld-dir <directory>                   Find dependency classes/jar in <directory>.
   -lsystem                              Find classes in default system classes.
   --facts-subset <subset>               Produce facts only for a subset of the given classes [APP, APP_N_DEPS, PLATFORM].
   --ignore-factgen-errors               Continue with the analysis even if fact generation fails.
@@ -50,7 +52,11 @@ java -jar soot-fact-generator.jar -i input.jar  -l /usr/lib/jvm/java-8-oracle/jr
 其中
 - `-i` 指定待分析的jar包
 - `-l` 指定依赖库
--  `--generate-jimple` 表示生成中间语言jimple
--  `--allow-phantom` 大概是允许解析依赖不存在的类
--  `--full` 表示对所有class进行解析
--  `-d` 指定输出目录
+- `--generate-jimple` 表示生成中间语言jimple
+- `--allow-phantom` 大概是允许解析依赖不存在的类
+- `--full` 表示对所有class进行解析
+- `-d` 指定输出目录
+
+另外还额外增加了
+- `-i-dir` 指定待分析的jar目录
+- `-ld-dir` 指定待分析的依赖目录

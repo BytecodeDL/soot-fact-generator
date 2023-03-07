@@ -35,6 +35,11 @@ public class Main {
             return;
         }
 
+        if ((args.length == 1) && (args[0].equals("--help") || args[0].equals("-h"))){
+            SootParameters.showHelp();
+            return;
+        }
+
         try {
             produceFacts(args);
         } catch (Exception ex) {
@@ -187,7 +192,10 @@ public class Main {
             Options.v().set_main_class(mainClass);
 
         if (sootParameters._mode == SootParameters.Mode.FULL)
+        {
             Options.v().set_full_resolver(true);
+            Options.v().set_whole_program(true);
+        }
 
         if (sootParameters._allowPhantom)
             Options.v().set_allow_phantom_refs(true);

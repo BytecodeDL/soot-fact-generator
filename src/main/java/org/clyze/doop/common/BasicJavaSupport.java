@@ -86,20 +86,27 @@ public class BasicJavaSupport {
                 XMLFactGenerator.processFile(xmlTmpFile, db, "", parameters._debug);
             }
         };
+
         if (isWar) {
             System.out.println("Processing WAR: " + filename);
             // Process WAR inputs.
             parameters.processFatArchives(tmpDirs);
-        }
-
-        if (isSpringBoot) {
+        }else if (isSpringBoot) {
             System.out.println("Processing springBoot: " + filename);
             parameters.processSpringBootArchives(tmpDirs, filename);
-        }
-
-        if (isJar || isApk || isZip || isWar)
+            parameters.getInputs().forEach(file -> {
+                try{
+//                    System.out.println(file);
+                    artScanner.processArchive(file, classSet::add, gProc);
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            });
             artScanner.processArchive(filename, classSet::add, gProc);
-        else if (isClass) {
+        }else if (isJar || isApk || isZip || isWar)
+        {
+            artScanner.processArchive(filename, classSet::add, gProc);
+        } else if (isClass) {
             File f = new File(filename);
             try (FileInputStream fis = new FileInputStream(f)) {
                 artScanner.processClass(fis, f, classSet::add);

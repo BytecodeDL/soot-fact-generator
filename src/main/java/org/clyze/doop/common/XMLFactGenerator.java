@@ -91,6 +91,9 @@ public class XMLFactGenerator extends DefaultHandler {
 
     private void parse(boolean debug) throws IOException, SAXException, ParserConfigurationException {
         SAXParserFactory spf = SAXParserFactory.newInstance();
+        spf.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        spf.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        spf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
         spf.setNamespaceAware(true);
         XMLReader xmlReader = spf.newSAXParser().getXMLReader();
         xmlReader.setContentHandler(this);

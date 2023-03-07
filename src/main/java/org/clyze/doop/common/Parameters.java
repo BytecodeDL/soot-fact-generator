@@ -161,13 +161,13 @@ public class Parameters {
             i = shift(args, i);
             _inputs.add(args[i]);
             break;
-        case "-idir":
+        case "-i-dir":
             i = shift(args, i);
             File inputDir = new File(args[i]);
             File[] files = inputDir.listFiles();
             if (files != null) {
                 for (File file : files) {
-                    if (file.getName().endsWith(".jar")) {
+                    if (file.getName().endsWith(".jar") || file.getName().endsWith(".class")) {
                         try{
                             _inputs.add(file.getCanonicalPath());
                         }catch (Exception e){
@@ -190,6 +190,22 @@ public class Parameters {
         case "-ld":
             i = shift(args, i);
             _dependencies.add(args[i]);
+            break;
+        case "-ld-dir":
+            i = shift(args, i);
+            File dependencyDir = new File(args[i]);
+            File[] dependencies = dependencyDir.listFiles();
+            if (dependencies != null) {
+                for (File file : dependencies) {
+                    if (file.getName().endsWith(".jar") || file.getName().endsWith(".class")) {
+                        try{
+                            _dependencies.add(file.getCanonicalPath());
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
             break;
         case "-d":
             i = shift(args, i);

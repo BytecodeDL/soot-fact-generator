@@ -90,9 +90,10 @@ public class SootParameters extends Parameters {
         System.err.println("  --allow-phantom                       Allow phantom classes.");
         System.err.println("  -d <directory>                        Specify where to generate output fact files.");
         System.err.println("  -i <archive>                          Find classes in <archive>.");
-        System.err.println("  -idir <directory>                     Find classes/jar in <directory>.");
+        System.err.println("  -i-dir <directory>                    Find classes/jar in <directory>.");
         System.err.println("  -l <archive>                          Find library classes in <archive>.");
         System.err.println("  -ld <archive>                         Find dependency classes in <archive>.");
+        System.err.println("  -ld-dir <directory>                   Find dependency classes/jar in <directory>.");
         System.err.println("  -lsystem                              Find classes in default system classes.");
         System.err.println("  --facts-subset <subset>               Produce facts only for a subset of the given classes " + Arrays.asList(Parameters.FactsSubSet.values()) + ".");
         System.err.println("  --ignore-factgen-errors               Continue with the analysis even if fact generation fails.");
