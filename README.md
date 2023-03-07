@@ -4,7 +4,7 @@ generate facts from bytecode (source is https://github.com/plast-lab/doop-mirror
 通过soot解析bytecode生成fact，类似于CodeQL创建database的过程，fact等价于codeql的database。
 
 ## build 
-执行 `gradle build`进行编译，`soot-fact-generator.jar` 在 `build/libs` 目录
+执行 `./gradlew build`进行编译，`soot-fact-generator.jar` 在 `build/libs` 目录
 
 ## usage
 
