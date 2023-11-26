@@ -1,3 +1,6 @@
 [submodule "clue-common"]
 	path = clue-common
 	url = https://github.com/BytecodeDL/clue-common.git
+[submodule "native-scanner"]
+	path = native-scanner
+	url = https://github.com/BytecodeDL/native-scanner.git
