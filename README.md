@@ -1,10 +1,15 @@
 # soot-fact-generator
+
 generate facts from bytecode (source is https://github.com/plast-lab/doop-mirror/tree/master/generators)
 
 通过soot解析bytecode生成fact，类似于CodeQL创建database的过程，fact等价于codeql的database。
 
 ## build 
-执行 `./gradlew build`进行编译，`soot-fact-generator.jar` 在 `build/libs` 目录
+
+1. 执行`git clone https://github.com/BytecodeDL/soot-fact-generator.git`
+2. 切换到目录 `cd soot-fact-generator`
+3. 更新submodule `git submodule update --init --recursive`
+4. 执行 `./gradlew build`进行编译，`soot-fact-generator.jar` 在 `build/libs` 目录
 
 ## usage
 
