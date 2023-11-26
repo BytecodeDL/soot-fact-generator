@@ -24,7 +24,7 @@ repositories {
 }
 
 dependencies {
-    implementation "org.soot-oss:soot:4.2.1"
+    implementation "org.soot-oss:soot:4.4.1"
 
     api(project(":clue-common")) {
         exclude group: 'com.google.code.gson', module: 'gson'
