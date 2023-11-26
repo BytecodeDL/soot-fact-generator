@@ -1,0 +1,3 @@
+[submodule "clue-common"]
+	path = clue-common
+	url = https://github.com/BytecodeDL/clue-common.git
