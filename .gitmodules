@@ -4,3 +4,6 @@
 [submodule "native-scanner"]
 	path = native-scanner
 	url = https://github.com/BytecodeDL/native-scanner.git
+[submodule "metadata-model"]
+	path = metadata-model
+	url = https://github.com/BytecodeDL/metadata-model.git

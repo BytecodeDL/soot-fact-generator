@@ -1,3 +1,5 @@
-build
-out
-.idea
+build/
+out/
+.idea/
+.DS_Store
+.gradle/

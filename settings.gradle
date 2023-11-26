@@ -1,0 +1,9 @@
+include ':clue-common'
+project(':clue-common').projectDir = new File('clue-common')
+
+include ':native-scanner'
+project(':native-scanner').projectDir = new File('native-scanner')
+
+
+include ':metadata-model'
+project(':metadata-model').projectDir = new File('metadata-model')
