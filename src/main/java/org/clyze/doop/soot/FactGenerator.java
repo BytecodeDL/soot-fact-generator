@@ -7,6 +7,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.clyze.doop.common.InstrInfo;
 import org.clyze.doop.common.Phantoms;
 import org.clyze.doop.common.SessionCounter;
@@ -34,6 +37,8 @@ class FactGenerator implements Runnable {
     private final SootParameters sootParameters;
     private final SootDriver _driver;
 
+    private static final Logger logger = LogManager.getLogger(FactGenerator.class);
+
     FactGenerator(FactWriter writer, Set<SootClass> sootClasses, SootDriver driver, SootParameters sootParameters, Phantoms phantoms)
     {
         this._writer = writer;
@@ -46,55 +51,87 @@ class FactGenerator implements Runnable {
 
     @Override
     public void run() {
-        final boolean ignoreErrors = _driver._ignoreFactGenErrors;
+        logger.info("start generate facts");
+        try{
+            final boolean ignoreErrors = _driver._ignoreFactGenErrors;
 
-        if (!ignoreErrors && _driver.errorsExist())
-            return;
+            if (!ignoreErrors && _driver.errorsExist())
+                return;
 
-        for (SootClass _sootClass : _sootClasses) {
-            _writer.writeClassOrInterfaceType(_sootClass);
-
-            for (String mod : getModifiers(_sootClass.getModifiers(), false))
-                if (!mod.trim().equals(""))
-                    _writer.writeClassModifier(_sootClass, mod);
-
-            // the isInterface condition prevents Object as superclass of interface
-            if (_sootClass.hasSuperclass() && !_sootClass.isInterface()) {
-                _writer.writeDirectSuperclass(_sootClass, _sootClass.getSuperclass());
-            }
-
-            for (SootClass i : _sootClass.getInterfaces()) {
-                _writer.writeDirectSuperinterface(_sootClass, i);
-            }
-
-            _sootClass.getFields().forEach(this::generate);
-
-            for (SootMethod m : new ArrayList<>(_sootClass.getMethods())) {
-                SessionCounter session = new SessionCounter();
+            for (SootClass _sootClass : _sootClasses) {
                 try {
-                    generate(m, session);
-                } catch (Throwable t) {
-                    // Map<Thread,StackTraceElement[]> liveThreads = Thread.getAllStackTraces();
-                    // for (Iterator<Thread> i = liveThreads.keySet().iterator(); i.hasNext(); ) {
-                    //     Thread key = i.next();
-                    //     System.err.println("Thread " + key.getName());
-                    //     StackTraceElement[] trace = liveThreads.getLibrary(key);
-                    //     for (int j = 0; j < trace.length; j++) {
-                    //         System.err.println("\tat " + trace[j]);
-                    //     }
-                    // }
-                    String msg = "Error while processing method: " + m + ": " + t.getMessage();
-                    System.err.println(msg);
-                    if (!ignoreErrors) {
-                        // Inform the driver. This is safer than throwing an
-                        // exception, since it could be lost due to the executor
-                        // service running this class.
-                        _driver.markError();
-                        return;
+                    _writer.writeClassOrInterfaceType(_sootClass);
+
+                    for (String mod : getModifiers(_sootClass.getModifiers(), false))
+                        if (!mod.trim().equals(""))
+                            _writer.writeClassModifier(_sootClass, mod);
+
+                    // the isInterface condition prevents Object as superclass of interface
+                    if (_sootClass.hasSuperclass() && !_sootClass.isInterface()) {
+                        _writer.writeDirectSuperclass(_sootClass, _sootClass.getSuperclass());
+                    }
+
+                    for (SootClass i : _sootClass.getInterfaces()) {
+                        _writer.writeDirectSuperinterface(_sootClass, i);
+                    }
+
+                    _sootClass.getFields().forEach(this::generate);
+
+                    for (SootMethod m : new ArrayList<>(_sootClass.getMethods())) {
+                        SessionCounter session = new SessionCounter();
+                        try {
+                            generate(m, session);
+                        } catch (Throwable t) {
+                            // Map<Thread,StackTraceElement[]> liveThreads = Thread.getAllStackTraces();
+                            // for (Iterator<Thread> i = liveThreads.keySet().iterator(); i.hasNext(); ) {
+                            //     Thread key = i.next();
+                            //     logger.error("Thread " + key.getName());
+                            //     StackTraceElement[] trace = liveThreads.getLibrary(key);
+                            //     for (int j = 0; j < trace.length; j++) {
+                            //         logger.error("\tat " + trace[j]);
+                            //     }
+                            // }
+                            String msg = "Error while processing method: " + m ;
+                            logger.error(msg, t);
+                            if (!ignoreErrors) {
+                                // Inform the driver. This is safer than throwing an
+                                // exception, since it could be lost due to the executor
+                                // service running this class.
+                                _driver.markError();
+                                return;
+                            }
+                        }
+                    }
+                }catch (Exception e){
+                    if (_sootClass != null){
+                        logger.error("handle class {}.{} error",_sootClass.getJavaStyleName(), e);
                     }
                 }
             }
+
+            if (sootParameters._lowMem && !sootParameters._generateJimple){
+                gcMethodBody(_sootClasses);
+            }
+        }catch (Exception e){
+            logger.error("FactGenerator run occur error ", e);
         }
+
+        logger.info("finish generator facts");
+
+    }
+
+    private void gcMethodBody(Set<SootClass> sootClasses){
+        logger.info("start gcMethodBody");
+        for (SootClass sootClass : sootClasses) {
+            for (SootMethod method : sootClass.getMethods()) {
+                if (method.hasActiveBody()){
+                    method.setActiveBody(null);
+                }
+            }
+        }
+        logger.info("start System.gc");
+        System.gc();
+        logger.info("finish gcMethodBody");
     }
 
     private void generate(SootField f)
@@ -207,7 +244,7 @@ class FactGenerator implements Runnable {
                 m.retrieveActiveBody();
                 // } // synchronizing so broadly = giving up on Soot's races
 
-                // System.err.println("Found method without active body: " + m.getSignature());
+                // logger.error("Found method without active body: " + m.getSignature());
                 methodsWithoutActiveBodies.incrementAndGet();
             }
 
@@ -227,8 +264,7 @@ class FactGenerator implements Runnable {
                         m.setActiveBody(b0);
                 }
             } catch (RuntimeException ex) {
-                System.err.println("Fact generation failed for method " + m.getSignature() + ".");
-                ex.printStackTrace();
+                logger.error("Fact generation failed for method " + m.getSignature() + ".", ex);
                 throw ex;
             }
         }
@@ -345,7 +381,7 @@ class FactGenerator implements Runnable {
         else if (cause instanceof SootMethod)
             _writer.writePhantomMethod(_writer._rep.signature((SootMethod)cause));
         else
-            System.err.println("Ignoring phantom cause: " + cause);
+            logger.error("Ignoring phantom cause: " + cause);
     }
 
     /**

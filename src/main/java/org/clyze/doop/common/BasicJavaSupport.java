@@ -1,5 +1,8 @@
 package org.clyze.doop.common;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -24,6 +27,8 @@ public class BasicJavaSupport {
     private final ExecutorService exec = Executors.newFixedThreadPool(3);
     public final Collection<String> xmlRoots = ConcurrentHashMap.newKeySet();
 
+    private static final Logger logger = LogManager.getLogger(BasicJavaSupport.class);
+
     public BasicJavaSupport(Parameters parameters, ArtifactScanner artScanner) {
         this.parameters = parameters;
         this.artScanner = artScanner;
@@ -42,15 +47,15 @@ public class BasicJavaSupport {
      */
     public void preprocessInputs(Database db, Set<String> tmpDirs) throws IOException {
         for (String filename : parameters.getInputs()) {
-            System.out.println("Preprocessing application: " + filename);
+            logger.info("Preprocessing application: " + filename);
             preprocessInput(db, tmpDirs, classesInApplicationJars, filename);
         }
         for (String filename : parameters.getPlatformLibs()) {
-            System.out.println("Preprocessing platform library: " + filename);
+            logger.info("Preprocessing platform library: " + filename);
             preprocessInput(db, tmpDirs, classesInLibraryJars, filename);
         }
         for (String filename : parameters.getDependencies()) {
-            System.out.println("Preprocessing dependency: " + filename);
+            logger.info("Preprocessing dependency: " + filename);
             preprocessInput(db, tmpDirs, classesInDependencyJars, filename);
         }
     }
@@ -82,21 +87,21 @@ public class BasicJavaSupport {
                 // APK archives may contain binary XML and need decoding.
                 File xmlTmpFile = ArtifactScanner.extractZipEntryAsFile("xml-file", jarFile, entry, entryName);
                 if (parameters._debug)
-                    System.out.println("Processing XML entry (in " + filename + "): " + entryName);
+                    logger.info("Processing XML entry (in " + filename + "): " + entryName);
                 XMLFactGenerator.processFile(xmlTmpFile, db, "", parameters._debug);
             }
         };
 
         if (isWar) {
-            System.out.println("Processing WAR: " + filename);
+            logger.info("Processing WAR: " + filename);
             // Process WAR inputs.
             parameters.processFatArchives(tmpDirs);
         }else if (isSpringBoot) {
-            System.out.println("Processing springBoot: " + filename);
+            logger.info("Processing springBoot: " + filename);
             parameters.processSpringBootArchives(tmpDirs, filename);
             parameters.getInputs().forEach(file -> {
                 try{
-//                    System.out.println(file);
+//                    logger.info(file);
                     artScanner.processArchive(file, classSet::add, gProc);
                 }catch (Exception e){
                     e.printStackTrace();
@@ -112,7 +117,7 @@ public class BasicJavaSupport {
                 artScanner.processClass(fis, f, classSet::add);
             }
         } else
-            System.err.println("WARNING: artifact scanner skips " + filename);
+            logger.warn("WARNING: artifact scanner skips " + filename);
     }
 
     public PropertyProvider getPropertyProvider() {

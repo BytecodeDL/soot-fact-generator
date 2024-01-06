@@ -10,7 +10,6 @@ gradle.rootProject.ext.commonsCliVersion='1.2'
 gradle.rootProject.ext.metadataVersion='2.4.1'
 gradle.rootProject.ext.groovyVersion='3.0.9'
 gradle.rootProject.ext.clueCommonVersion='3.25.3'
-gradle.rootProject.ext.log4jVersion='1.2.17'
 gradle.rootProject.ext.spockVersion='2.1-M2-groovy-3.0'
 gradle.rootProject.ext.asmVersion = '8.0.1'
 
@@ -38,8 +37,9 @@ dependencies {
     implementation 'net.dongliu:apk-parser:2.6.10'          // needed for reading binary XML entries from APK inputs
     implementation "org.antlr:antlr4-runtime:${antlrVersion}"
     api project(":native-scanner")
-    api "log4j:log4j:${log4jVersion}"            // Logging implementation
     implementation 'org.apache.commons:commons-collections4:4.1'
+    implementation 'org.apache.logging.log4j:log4j-api:2.17.1'
+    implementation 'org.apache.logging.log4j:log4j-core:2.17.1'
 
     testImplementation "org.codehaus.groovy:groovy-all:${groovyVersion}"  // Groovy
     testImplementation "org.spockframework:spock-core:${spockVersion}"

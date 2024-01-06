@@ -5,6 +5,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.clyze.doop.common.*;
 import org.clyze.utils.TypeUtils;
 import soot.*;
@@ -28,6 +31,8 @@ class FactWriter extends JavaFactWriter {
     private final Phantoms phantoms;
     private final Collection<Object> seenPhantoms = ConcurrentHashMap.newKeySet();
     private final Map<Unit, Collection<InstrInfo>> expandedPhiNodes = new ConcurrentHashMap<>();
+
+    private static final Logger logger = LogManager.getLogger(FactWriter.class);
 
     FactWriter(Database db, SootParameters params, Representation rep, Phantoms phantoms) {
         super(db, params);
@@ -141,7 +146,7 @@ class FactWriter extends JavaFactWriter {
             writeAnnotationElement(targetType, target, parentId, thisId, "INNER-ANNOTATION", "-", null);
             writeAnnotationElements(targetType, target, thisId, aae.getValue().getElems());
         } else
-            System.err.println("WARNING: unknown annotation element, type: '" + ae.getClass() + "', name: '" + ae.getName() + "'");
+            logger.warn("WARNING: unknown annotation element, type: '" + ae.getClass() + "', name: '" + ae.getName() + "'");
     }
 
     // Helper method used by writeAnnotationElement().
@@ -440,7 +445,7 @@ class FactWriter extends JavaFactWriter {
             else if (constant instanceof IntConstant)
                 writeNumConstantRaw(val, "int");
             else
-                System.err.println("WARNING: arithmetic constant is not long/int: " + constant);
+                logger.warn("WARNING: arithmetic constant is not long/int: " + constant);
         }
         _db.add(ASSIGN_CAST_NUM_CONST, ii.insn, str(ii.index), val, _rep.local(methodId, to), writeType(t), methodId);
     }
@@ -507,7 +512,7 @@ class FactWriter extends JavaFactWriter {
 
     String writeField(SootField f) {
         if (f == null) {
-            System.err.println("WARNING: null field encountered.");
+            logger.warn("WARNING: null field encountered.");
             return null;
         }
         String fieldId = _rep.signature(f);
@@ -844,7 +849,7 @@ class FactWriter extends JavaFactWriter {
             else
                 throw new RuntimeException("Value has unknown constant type: " + v);
         } else if (!(v instanceof JimpleLocal))
-            System.err.println("WARNING: value has unknown non-constant type: " + v.getClass().getName());
+            logger.warn("WARNING: value has unknown non-constant type: " + v.getClass().getName());
         return v;
     }
 
@@ -953,7 +958,7 @@ class FactWriter extends JavaFactWriter {
             else if (v instanceof NumericConstant)
                 v = writeNumConstantExpression(methodId, (NumericConstant) v, vType, session);
             else
-                System.err.println("ERROR: unknown type of immediate: " + v.getClass());
+                logger.warn("ERROR: unknown type of immediate: " + v.getClass());
         }
         return v;
     }
@@ -1071,7 +1076,7 @@ class FactWriter extends JavaFactWriter {
                 } else if (tag instanceof StringConstantValueTag) {
                     writeStringConstant(val);
                 } else
-                    System.err.println("Unsupported field tag " + tag.getClass());
+                    logger.warn("Unsupported field tag " + tag.getClass());
             }
     }
 

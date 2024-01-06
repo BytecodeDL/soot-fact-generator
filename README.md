@@ -65,3 +65,9 @@ java -jar soot-fact-generator.jar -i input.jar  -l /usr/lib/jvm/java-8-oracle/jr
 另外还额外增加了
 - `-i-dir` 指定待分析的jar目录
 - `-ld-dir` 指定待分析的依赖目录
+
+分析很大文件/多文件，比如weblogic这种，可以使用如下命令(需使用最新版)，可根据自己情况调整JVM的参数
+
+```
+java -Xms8g -Xmx12g -jar soot-fact-generator-1.4.2.jar -d weblogic-out -i-dir /root/ByteCodeDL/weblogic --lowMem --allow-phantom --full -lsystem --ignore-factgen-errors
+```

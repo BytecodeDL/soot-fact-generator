@@ -8,7 +8,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
-import org.apache.log4j.Logger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.clyze.doop.common.ArtifactEntry;
 import org.clyze.doop.common.ArtifactScanner;
 import org.clyze.doop.common.Database;
@@ -26,7 +28,7 @@ import static org.clyze.doop.common.FrontEndLogger.*;
 
 public class Main {
 
-    private static Logger logger;
+    private static Logger logger = LogManager.getLogger(Main.class);
     private static final String debug = System.getenv("SOOT_DEBUG");
 
     public static void main(String[] args) throws Exception {
@@ -56,13 +58,6 @@ public class Main {
         sootParameters.initFromArgs(args);
         String outDir = sootParameters.getOutputDir();
 
-        try {
-            logger = sootParameters.initLogging(Main.class);
-        } catch (IOException ex) {
-            System.err.println("WARNING: could not initialize logging");
-            throw DoopErrorCodeException.error18(ex);
-        }
-
         checkJVMArgs();
 
         DoopAddons.initReflectiveAccess();
@@ -80,7 +75,7 @@ public class Main {
             Options.v().set_via_shimple(true);
             Options.v().set_output_format(Options.output_format_shimple);
         } else {
-            logWarn(logger, "WARNING: SSA not enabled, generating Jimple instead of Shimple");
+            logger.warn("WARNING: SSA not enabled, generating Jimple instead of Shimple");
             Options.v().set_output_format(Options.output_format_jimple);
         }
 
@@ -95,15 +90,15 @@ public class Main {
         // Set up Soot options that depend on target platform (Android/Java).
         AndroidSupport_Soot android;
         if (sootParameters._dex) {
-            System.out.println("Running in mixed Soot/Dex mode.");
+            logger.info("Running in mixed Soot/Dex mode.");
             android = null;
         } else if (sootParameters._android) {
             if (sootParameters.getInputs().size() > 1)
-                logWarn(logger, "WARNING: Android mode: all inputs will be preprocessed but only " + sootParameters.getInputs().get(0) + " will be considered as application file. The rest of the input files may be ignored by Soot.\n");
+                logger.warn("WARNING: Android mode: all inputs will be preprocessed but only " + sootParameters.getInputs().get(0) + " will be considered as application file. The rest of the input files may be ignored by Soot.\n");
             Options.v().set_process_multiple_dex(true);
             Options.v().set_src_prec(Options.src_prec_apk);
             if (sootParameters._androidJars == null)
-                logWarn(logger, "WARNING: missing --android-jars option.");
+                logger.warn("WARNING: missing --android-jars option.");
             else
                 Options.v().set_android_jars(sootParameters._androidJars);
             android = new AndroidSupport_Soot(sootParameters, java);
@@ -126,7 +121,7 @@ public class Main {
                     try {
                         invokeSoot(sootParameters, db, tmpDirs, sootData, java, android, scene, writeFacts);
                     } catch (Throwable t) {
-                        t.printStackTrace();
+                        logger.error("invoke soot error", t);
                         errors.incrementAndGet();
                     }});
 
@@ -138,21 +133,21 @@ public class Main {
                 throw DoopErrorCodeException.error34("Fact generation failed with " + numErrors + " errors.");
 
             if (writeFacts && sootParameters._scanNativeCode)
-		ArtifactScanner.scanNativeCode(db, sootParameters, sootData.writer.getMethodStrings());
+		    ArtifactScanner.scanNativeCode(db, sootParameters, sootData.writer.getMethodStrings());
 
             if (sootParameters._generateJimple)
                 generateIR(java, scene, sootData.classes, sootData.driver, outDir);
 
-            System.err.println("Methods without active bodies encountered (and reset): " + FactGenerator.methodsWithoutActiveBodies.get());
+            logger.warn("Methods without active bodies encountered (and reset): " + FactGenerator.methodsWithoutActiveBodies.get());
 
             if (sootParameters._lowMem) {
-                System.out.println("Releasing Soot structures...");
+                logger.info("lowMem: Releasing Soot structures...");
                 for (SootClass cl : scene.getClasses())
                     for (SootMethod m : cl.getMethods())
                         if (m.hasActiveBody())
                             m.setActiveBody(null);
                 System.gc();
-                System.out.println("Done.");
+                logger.info("lowMem: Done.");
             }
         } finally {
             // Clean up any temporary directories used for WAR/AAR extraction.
@@ -172,18 +167,18 @@ public class Main {
         List<String> inputs = sootParameters.getInputs();
         for (String input : inputs) {
             String inputFormat = input.endsWith(".jar")? "archive" : "file";
-            System.out.println("Adding " + inputFormat + ": "  + input);
+            logger.info("Adding " + inputFormat + ": "  + input);
 
             addToSootClassPath(scene, input);
             if (sootParameters._android) {
                 if (inputs.size() > 1)
-                    logWarn(logger, "WARNING: skipping rest of inputs");
+                    logger.warn("WARNING: skipping rest of inputs");
                 break;
             }
         }
 
         for (String lib : sootParameters.getDependenciesAndPlatformLibs()) {
-            System.out.println("Adding archive for resolving: " + lib);
+            logger.info("Adding archive for resolving: " + lib);
             addToSootClassPath(scene, lib);
         }
 
@@ -203,24 +198,24 @@ public class Main {
         Set<SootClass> classes = ConcurrentHashMap.<SootClass>newKeySet();
         ClassAdder classAdder = (android != null) ? android : java;
         if (sootParameters._factsSubSet == SootParameters.FactsSubSet.APP) {
-            System.out.println("WARNING: only application classes will be used.");
+            logger.info("WARNING: only application classes will be used.");
             classAdder.addAppClasses(classes, scene);
             // Add library classes, to be pruned later.
             classAdder.addLibClasses(classes, scene);
         } else if (sootParameters._factsSubSet == SootParameters.FactsSubSet.APP_N_DEPS) {
-            System.out.println("WARNING: only application/dependency classes will be used.");
+            logger.info("WARNING: only application/dependency classes will be used.");
             classAdder.addAppClasses(classes, scene);
             classAdder.addDepClasses(classes, scene);
             // Add library classes, to be pruned later.
             classAdder.addLibClasses(classes, scene);
         } else if (sootParameters._factsSubSet == SootParameters.FactsSubSet.PLATFORM) {
-            System.out.println("WARNING: only platform classes will be used.");
+            logger.info("WARNING: only platform classes will be used.");
             classAdder.addLibClasses(classes, scene);
         } else
             classAdder.addAppClasses(classes, scene);
 
         for (String extraClass : sootParameters.getExtraClassesToResolve()) {
-            System.out.println("Marking class to resolve: " + extraClass);
+            logger.info("Marking class to resolve: " + extraClass);
             scene.addBasicClass(extraClass, SootClass.BODIES);
         }
 
@@ -238,10 +233,10 @@ public class Main {
 
         classes = ConcurrentHashMap.<SootClass>newKeySet();
         classes.addAll(scene.getClasses());
-        System.out.println("Total classes in Scene: " + classes.size());
+        logger.info("Total classes in Scene: " + classes.size());
 
         if (mainClass != null && classes.stream().noneMatch((SootClass sc) -> sc.getName().equals(mainClass)))
-            System.err.println("WARNING: main class does not exist: " + mainClass);
+            logger.warn("WARNING: main class does not exist: " + mainClass);
 
         // If a facts subset is selected, delete all other classes before fact generation.
         if (sootParameters._factsSubSet != null) {
@@ -259,19 +254,19 @@ public class Main {
         }
 
         // Skip "retrieve all bodies" step for Android apps.
-        if (android == null) {
-            long time1 = System.currentTimeMillis();
-            try {
-                DoopAddons.retrieveAllSceneClassesBodies(sootParameters._cores);
-                // The call below has a problem (only retrieves app method bodies).
-                // DoopAddons.retrieveAllBodies();
-                long time2 = System.currentTimeMillis();
-                System.out.println("Retrieved all bodies (time: " + ((time2 - time1)/1000) + ")");
-            } catch (Exception ex) {
-                System.err.println("Error: not all bodies retrieved.");
-                ex.printStackTrace();
-            }
-        }
+//        if (android == null) {
+//            logger.info("start retrieveAllSceneClassesBodies");
+//            long time1 = System.currentTimeMillis();
+//            try {
+//                DoopAddons.retrieveAllSceneClassesBodies(sootParameters._cores);
+//                // The call below has a problem (only retrieves app method bodies).
+//                // DoopAddons.retrieveAllBodies();
+//                long time2 = System.currentTimeMillis();
+//                logger.info("Retrieved all bodies (time: " + ((time2 - time1)/1000) + ")");
+//            } catch (Exception ex) {
+//                logger.error("Error: not all bodies retrieved.", ex);
+//            }
+//        }
 
         boolean reportPhantoms = sootParameters._reportPhantoms;
         boolean moreStrings = sootParameters._extractMoreStrings;
@@ -295,25 +290,28 @@ public class Main {
             // later be asking soot to add phantom classes to the scene's hierarchy
             driver.generateInParallel(classes);
 
-            logDebug(logger, "Checking class heaps for missing types...");
-            Collection<String> unrecorded = new ClassHeapFinder().getUnrecordedTypes(classes);
-            if (unrecorded.size() > 0) {
-                // If option is set, fail and notify caller that fact generation
-                // must run again with these classes added.
-                String outFile = sootParameters._missingClassesOut;
-                if (outFile != null) {
-                    try (FileWriter fWriter = new FileWriter(outFile)) {
-                        unrecorded.forEach(s -> {
+            if (!sootParameters._lowMem){
+                logger.info("Checking class heaps for missing types...");
+                Collection<String> unrecorded = new ClassHeapFinder().getUnrecordedTypes(classes);
+                if (unrecorded.size() > 0) {
+                    // If option is set, fail and notify caller that fact generation
+                    // must run again with these classes added.
+                    String outFile = sootParameters._missingClassesOut;
+                    if (outFile != null) {
+                        try (FileWriter fWriter = new FileWriter(outFile)) {
+                            unrecorded.forEach(s -> {
                                 try {
                                     fWriter.write(s + '\n');
                                 } catch (IOException ex) {
                                     System.err.println("ERROR: " + ex.getMessage());
                                 }});
-                    }
-                    logError(logger, "ERROR: some classes were not resolved (see " + outFile + "), restarting fact generation: " + Arrays.toString(unrecorded.toArray()));
-                } else
-                    logWarn(logger, "WARNING: some classes were not resolved, consider using thorough fact generation or adding them manually via --also-resolve: " + Arrays.toString(unrecorded.toArray()));
+                        }
+                        logger.error("ERROR: some classes were not resolved (see " + outFile + "), restarting fact generation: " + Arrays.toString(unrecorded.toArray()));
+                    } else
+                        logger.error("WARNING: some classes were not resolved, consider using thorough fact generation or adding them manually via --also-resolve: " + Arrays.toString(unrecorded.toArray()));
+                }
             }
+
 
             writer.writeLastFacts(java);
         }
@@ -330,14 +328,14 @@ public class Main {
             if (!check.test(sc.getName()))
                 typesToDelete.add(sc);
         });
-        System.out.println("Deleting " + typesToDelete.size() + " types due to selected facts subset.");
+        logger.info("Deleting " + typesToDelete.size() + " types due to selected facts subset.");
         classes.removeAll(typesToDelete);
     }
 
     private static boolean sootClassPathFirstElement = true;
     private static void addToSootClassPath(Scene scene, String input) {
         if (input.endsWith(".class"))
-            System.err.println("WARNING: bare input class may not be resolved correctly, should be repackaged as a .jar: " + input);
+            logger.error("WARNING: bare input class may not be resolved correctly, should be repackaged as a .jar: " + input);
 
         if (sootClassPathFirstElement) {
             scene.setSootClassPath(input);
@@ -368,7 +366,7 @@ public class Main {
 
     private static void showPacks() {
         for (soot.Pack pack : soot.PackManager.v().allPacks())
-            System.out.println("Pack: " + pack.getPhaseName());
+            logger.info("Pack: " + pack.getPhaseName());
     }
 
     /**
@@ -383,12 +381,12 @@ public class Main {
         boolean utf8 = false;
         for (String arg : runtimeMxBean.getInputArguments()) {
             if (debug != null)
-                System.err.println("Soot front end argument: " + arg);
+                logger.info("Soot front end argument: " + arg);
             if (arg.contains(UTF8_ENCODING))
                 utf8 = true;
         }
         if (!utf8)
-            logWarn(logger, "WARNING: 'file.encoding' property missing or not UTF8, please pass: " + UTF8_ENCODING);
+            logger.warn("WARNING: 'file.encoding' property missing or not UTF8, please pass: " + UTF8_ENCODING);
     }
 
     /**
@@ -412,7 +410,7 @@ public class Main {
             allClassNames.addAll(artEntries);
         }
         forceResolveClasses(allClassNames, jimpleClasses, scene);
-        System.out.println("Total classes (application, dependencies and SDK) to generate Jimple for: " + jimpleClasses.size());
+        logger.info("Total classes (application, dependencies and SDK) to generate Jimple for: " + jimpleClasses.size());
 
         // Write classes, following package hierarchy.
         Options.v().set_output_dir(DoopConventions.jimpleDir(outDir));

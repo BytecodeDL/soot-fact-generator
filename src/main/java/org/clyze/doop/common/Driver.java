@@ -1,5 +1,8 @@
 package org.clyze.doop.common;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -15,9 +18,11 @@ public abstract class Driver<C> {
     protected Set<C> _tmpClassGroup;
     private int _classCounter;
     private final int _totalClasses;
-    private final int _classSplit = 80;
+    private final int _classSplit = 800;
     private int errors;
     public final boolean _ignoreFactGenErrors;
+
+    private static final Logger logger = LogManager.getLogger(Driver.class);
 
     protected Driver(int totalClasses, Integer cores, boolean ignoreFactGenErrors) {
         this._totalClasses = totalClasses;
@@ -26,7 +31,7 @@ public abstract class Driver<C> {
         initTmpClassGroup();
         this._ignoreFactGenErrors = ignoreFactGenErrors;
 
-        System.out.println("Fact generation cores: " + _cores);
+        logger.info("Fact generation cores: " + _cores);
     }
 
     protected void initTmpClassGroup() {
@@ -67,9 +72,9 @@ public abstract class Driver<C> {
         try {
             boolean res = executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
             if (!res)
-                System.out.println("Executor timeout elapsed.");
+                logger.info("Executor timeout elapsed.");
         } catch (InterruptedException e) {
-            System.err.println(e.getMessage());
+           logger.error("waitForExecutorShutdown got interrupt", e);
             throw DoopErrorCodeException.error10();
         }
     }
@@ -78,7 +83,7 @@ public abstract class Driver<C> {
         waitForExecutorShutdown(_executor);
         if (errorsExist()) {
             String msg = "Fact generation failed (" + errors + " errors).";
-            System.err.println(msg);
+            logger.error(msg);
             if (!_ignoreFactGenErrors)
                 throw DoopErrorCodeException.error5(msg);
         }
@@ -98,6 +103,7 @@ public abstract class Driver<C> {
         _tmpClassGroup.add(curClass);
 
         if ((_classCounter % _classSplit == 0) || (_classCounter == _totalClasses)) {
+            logger.info("have submit class {} for fact gen", _classCounter);
             _executor.execute(getFactGenRunnable());
             initTmpClassGroup();
         }
