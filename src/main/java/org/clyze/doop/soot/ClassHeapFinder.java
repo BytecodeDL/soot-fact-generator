@@ -35,8 +35,13 @@ class ClassHeapFinder {
 
     private void scan(SootMethod m) {
         if (!m.hasActiveBody()) {
-            m.retrieveActiveBody();
             System.err.println("Preprocessing: found method without active body: " + m.getSignature());
+            try{
+                m.retrieveActiveBody();
+            }catch (Exception e){
+                e.printStackTrace();
+                return;
+            }
         }
         for (Unit u : m.getActiveBody().getUnits())
             if (u instanceof AssignStmt) {

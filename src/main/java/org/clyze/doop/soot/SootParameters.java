@@ -87,6 +87,7 @@ public class SootParameters extends Parameters {
         System.err.println("  --main <class>                        Specify the name of the main class.");
         System.err.println("  --ssa                                 Generate SSA facts, enabling flow-sensitive analysis.");
         System.err.println("  --full                                Generate facts by full transitive resolution.");
+        System.err.println("  --applicaiton-regex                   Application class glob expr default is **");
         System.err.println("  --allow-phantom                       Allow phantom classes.");
         System.err.println("  -d <directory>                        Specify where to generate output fact files.");
         System.err.println("  -i <archive>                          Find classes in <archive>.");

@@ -46,9 +46,10 @@ public class BasicJavaSupport {
      * Helper method to read classes and resources from input archives.
      */
     public void preprocessInputs(Database db, Set<String> tmpDirs) throws IOException {
+        Set<String> tmpClasses = ConcurrentHashMap.newKeySet();
         for (String filename : parameters.getInputs()) {
             logger.info("Preprocessing application: " + filename);
-            preprocessInput(db, tmpDirs, classesInApplicationJars, filename);
+            preprocessInput(db, tmpDirs, tmpClasses, filename);
         }
         for (String filename : parameters.getPlatformLibs()) {
             logger.info("Preprocessing platform library: " + filename);
@@ -57,6 +58,18 @@ public class BasicJavaSupport {
         for (String filename : parameters.getDependencies()) {
             logger.info("Preprocessing dependency: " + filename);
             preprocessInput(db, tmpDirs, classesInDependencyJars, filename);
+        }
+
+        classifyClasses(tmpClasses);
+    }
+
+    public void classifyClasses(Set<String> tmpClasses){
+        for (String filename : tmpClasses) {
+            if (parameters.isApplicationClass(filename)){
+                classesInApplicationJars.add(filename);
+            }else{
+                classesInLibraryJars.add(filename);
+            }
         }
     }
 

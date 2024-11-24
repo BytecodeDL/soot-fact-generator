@@ -13,12 +13,15 @@ generate facts from bytecode (source is https://github.com/plast-lab/doop-mirror
 
 ## usage
 
+1.4.3
+
 ```
 Usage: soot-fact-generator [options] file...
 Options:
   --main <class>                        Specify the name of the main class.
   --ssa                                 Generate SSA facts, enabling flow-sensitive analysis.
   --full                                Generate facts by full transitive resolution.
+  --applicaiton-regex                   Application class glob expr default is **
   --allow-phantom                       Allow phantom classes.
   -d <directory>                        Specify where to generate output fact files.
   -i <archive>                          Find classes in <archive>.
@@ -52,7 +55,7 @@ Supported input archive formats: AAR, APK, JAR, ZIP
 ```
 常见的用法是
 ```
-java -jar soot-fact-generator.jar -i input.jar  -l /usr/lib/jvm/java-8-oracle/jre/lib/rt.jar --generate-jimple --allow-phantom --full -d out
+java -jar soot-fact-generator-1.4.3.jar -i Benchmark.jar  -l /usr/lib/jvm/java-8-oracle/jre/lib/rt.jar --generate-jimple --allow-phantom --full --ignore-factgen-errors  --ignore-wrong-staticness  --application-regex 'com.bytecodedl.benchmark.**' -d out 
 ```
 其中
 - `-i` 指定待分析的jar包
@@ -61,6 +64,9 @@ java -jar soot-fact-generator.jar -i input.jar  -l /usr/lib/jvm/java-8-oracle/jr
 - `--allow-phantom` 大概是允许解析依赖不存在的类
 - `--full` 表示对所有class进行解析
 - `-d` 指定输出目录
+- `--ignore-factgen-errors  --ignore-wrong-staticness` 忽略生成fact过程中的一些错误
+- `--application-regex 'com.bytecodedl.benchmark.**'` 表示只对`com.bytecodedl.benchmark.`开头的class解析method body，其他只解析函数签名
+  - 如果存在多个开头，可以用`/`隔开，默认是`**`全部解析，如果只关注某些class中的逻辑建议加上该参数，能极大降低生成fact的时间
 
 另外还额外增加了
 - `-i-dir` 指定待分析的jar目录

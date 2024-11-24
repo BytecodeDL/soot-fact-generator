@@ -2,6 +2,9 @@ package org.clyze.doop.soot;
 
 import java.util.Collection;
 import java.util.Set;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.clyze.doop.common.ArtifactScanner;
 import org.clyze.doop.common.BasicJavaSupport;
 import soot.Scene;
@@ -9,12 +12,17 @@ import soot.SootClass;
 import soot.SourceLocator;
 
 public class BasicJavaSupport_Soot extends BasicJavaSupport implements ClassAdder {
+    Logger logger = LogManager.getLogger(BasicJavaSupport_Soot.class);
 
     public BasicJavaSupport_Soot(SootParameters parameters, ArtifactScanner artScanner) {
         super(parameters, artScanner);
     }
 
     public void addSootClasses(Iterable<String> classesToLoad, Collection<SootClass> loadedClasses, Scene scene) {
+        logger.info("start addSootClasses");
+        if (classesToLoad instanceof Set){
+            logger.info("addSootClasses size " + ((Set<String>) classesToLoad).size());
+        }
         for (String className : classesToLoad) {
             if (className.contains("]") || className.contains("[") || className.contains(";")) {
                 System.err.println("WARNING: class name '" + className + "' is not supported, class will not be loaded.");
@@ -28,6 +36,7 @@ public class BasicJavaSupport_Soot extends BasicJavaSupport implements ClassAdde
                 throw ex;
             }
         }
+        logger.info("end addSootClasses loadedClasses" + loadedClasses.size());
     }
 
     @Override
@@ -49,7 +58,7 @@ public class BasicJavaSupport_Soot extends BasicJavaSupport implements ClassAdde
     public void addAppClasses(Set<SootClass> classes, Scene scene) {
         addSootClasses(classesInApplicationJars, classes, scene);
         addBasicClasses(scene);
-        System.out.println("Classes in input (application) jar(s): " + classesInApplicationJars.size());
+        logger.info("Classes in input (application) jar(s): " + classesInApplicationJars.size());
     }
 
     @Override

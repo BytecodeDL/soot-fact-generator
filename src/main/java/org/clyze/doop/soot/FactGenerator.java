@@ -236,7 +236,7 @@ class FactGenerator implements Runnable {
         for(SootClass clazz: m.getExceptions())
             _writer.writeMethodDeclaresException(m, clazz);
 
-        if(!(m.isAbstract() || m.isNative())) {
+        if(!(m.isAbstract() || m.isNative()) && this.sootParameters.isApplicationClass(m.getDeclaringClass())) {
             if(!m.hasActiveBody()) {
                 // This instruction is the bottleneck of
                 // soot-fact-generation.

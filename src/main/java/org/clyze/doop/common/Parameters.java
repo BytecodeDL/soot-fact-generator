@@ -360,7 +360,7 @@ public class Parameters {
             ZipEntry entry = null;
 
             while((entry = in.getNextEntry()) != null){
-                if (entry.isDirectory() && entry.getName().equals("org/springframework/boot/")){
+                if (entry.isDirectory() && entry.getName().equals("BOOT-INF/")){
                     return true;
                 }
             }

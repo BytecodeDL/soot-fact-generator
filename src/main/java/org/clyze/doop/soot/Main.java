@@ -8,6 +8,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -292,7 +293,8 @@ public class Main {
 
             if (!sootParameters._lowMem){
                 logger.info("Checking class heaps for missing types...");
-                Collection<String> unrecorded = new ClassHeapFinder().getUnrecordedTypes(classes);
+                Set<SootClass> appClasses = classes.stream().filter(sootParameters::isApplicationClass).collect(Collectors.toSet());
+                Collection<String> unrecorded = new ClassHeapFinder().getUnrecordedTypes(appClasses);
                 if (unrecorded.size() > 0) {
                     // If option is set, fail and notify caller that fact generation
                     // must run again with these classes added.
